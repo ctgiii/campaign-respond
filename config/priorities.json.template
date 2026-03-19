@@ -1,0 +1,16 @@
+{
+  "description": "Issue priority weights (0.0-1.0). Higher weight = more emphasis in responses.",
+  "issues": {
+    "economy": 0.8,
+    "education": 0.7,
+    "healthcare": 0.7,
+    "environment": 0.6,
+    "public_safety": 0.6,
+    "infrastructure": 0.5,
+    "housing": 0.5,
+    "civil_rights": 0.6,
+    "government_reform": 0.5,
+    "technology": 0.4
+  },
+  "custom_issues": {}
+}

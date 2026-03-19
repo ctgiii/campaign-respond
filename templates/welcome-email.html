@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e; line-height: 1.6; }
+  h1 { color: #1a1a2e; font-size: 24px; }
+  h2 { color: #16213e; font-size: 18px; margin-top: 30px; }
+  .highlight { background: #f0f4ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+  code { background: #1a1a2e; color: #e2e2e2; padding: 3px 8px; border-radius: 4px; font-size: 14px; }
+  pre { background: #1a1a2e; color: #e2e2e2; padding: 16px; border-radius: 8px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e2e2; color: #666; font-size: 14px; }
+  .badge { display: inline-block; background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Your Campaign Respond Bot Team is Ready</h1>
+<p class="badge">INSTALLED & CONFIGURED</p>
+
+<p>Hi {{requester_name}},</p>
+
+<p>Your Campaign Respond bot team is now installed and ready to help <strong>{{candidate_name}}</strong>'s campaign respond to questionnaires.</p>
+
+<p>Built by Teddy Galloway / Visionary Productions.<br>
+Housed on <strong>YOUR</strong> computer — your data stays with you.</p>
+
+<h2>How to Use It</h2>
+
+<div class="highlight">
+<strong>Option 1: Terminal (CLI)</strong>
+<ol>
+<li>Open Terminal (Mac: <code>Cmd+Space</code> → type "Terminal")</li>
+<li>Type: <code>cd {{install_path}}</code></li>
+<li>Type: <code>campaign-respond new ~/path/to/questionnaire.pdf</code></li>
+<li>Check progress: <code>campaign-respond status</code></li>
+<li>Full command reference: <code>campaign-respond help</code></li>
+</ol>
+</div>
+
+<div class="highlight">
+<strong>Option 2: Claude Desktop App</strong>
+<ol>
+<li>Download Claude desktop app from claude.ai/download</li>
+<li>Open Claude → Settings → Developer → Edit Config</li>
+<li>Add this to your <code>claude_desktop_config.json</code>:
+<pre><code>{
+  "mcpServers": {
+    "campaign-respond": {
+      "command": "python3",
+      "args": ["{{install_path}}/mcp-server/campaign-respond-server.py"]
+    }
+  }
+}</code></pre>
+</li>
+<li>Now you can chat naturally:
+  <ul>
+    <li>"Process this questionnaire for the Apple Ballot"</li>
+    <li>"Show me the status of my current questionnaires"</li>
+    <li>"Add this speech transcript as source material"</li>
+  </ul>
+</li>
+</ol>
+</div>
+
+<h2>Quick Reference</h2>
+<pre><code>campaign-respond new &lt;file&gt;           Submit a questionnaire
+campaign-respond status                Check progress
+campaign-respond add-source &lt;file&gt;     Add candidate material
+campaign-respond add-voice-sample &lt;f&gt;  Add speech/writing sample
+campaign-respond list                  All questionnaires
+campaign-respond help                  Full commands</code></pre>
+
+<p>Your install guide PDF is at: <code>{{install_path}}/docs/install-guide.pdf</code></p>
+
+<div class="footer">
+<p>Questions? Reply to this email or text Teddy at the number provided during setup.</p>
+<p><strong>Campaign Respond</strong> by Visionary Productions — visionaryproductions.us</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Credentials and secrets
+.env
+storage/credentials/
+config/campaign.json
+config/storage.json
+config/voice-profile.json
+config/priorities.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Output
+questionnaires/active/*/output/
+questionnaires/completed/
+demo/output/
+state/pipeline-state.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated
+docs/install-guide.pdf
+docs/welcome-email.html

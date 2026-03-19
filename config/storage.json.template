@@ -1,0 +1,18 @@
+{
+  "provider": "local",
+  "local": {
+    "output_dir": "./questionnaires/completed"
+  },
+  "google_drive": {
+    "credentials_path": "./storage/credentials/google-token.json",
+    "folder_id": "",
+    "folder_name": "Campaign Respond"
+  },
+  "onedrive": {
+    "credentials_path": "./storage/credentials/onedrive-token.json",
+    "folder_path": "/Campaign Respond"
+  },
+  "proton_drive": {
+    "mount_path": ""
+  }
+}

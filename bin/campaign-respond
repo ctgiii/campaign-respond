@@ -1,0 +1,355 @@
+#!/usr/bin/env bash
+# Campaign Respond CLI — Political Questionnaire Bot Team
+# Usage: campaign-respond <command> [args]
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PYTHON="${PYTHON:-python3}"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+banner() {
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}  Campaign Respond${NC} — Political Questionnaire Bot Team"
+    echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+check_config() {
+    if [ ! -f "$BASE_DIR/config/campaign.json" ]; then
+        echo -e "${RED}ERROR: Not configured. Run install.sh first.${NC}"
+        exit 1
+    fi
+}
+
+cmd_new() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond new <questionnaire-file>${NC}"
+        echo "  Supported formats: PDF, DOCX, TXT, MD"
+        exit 1
+    fi
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        echo -e "${RED}File not found: $file${NC}"
+        exit 1
+    fi
+    banner
+    echo -e "\n${BLUE}Processing questionnaire: $(basename "$file")${NC}\n"
+    cd "$BASE_DIR"
+    $PYTHON pipeline/orchestrator.py "$file"
+}
+
+cmd_status() {
+    check_config
+    banner
+    echo ""
+
+    local active_dir="$BASE_DIR/questionnaires/active"
+    if [ ! -d "$active_dir" ] || [ -z "$(ls -A "$active_dir" 2>/dev/null)" ]; then
+        echo -e "  ${YELLOW}No active questionnaires${NC}"
+    else
+        echo -e "  ${BOLD}Active Questionnaires:${NC}"
+        for dir in "$active_dir"/*/; do
+            [ -d "$dir" ] || continue
+            local id=$(basename "$dir")
+            local state_file="$dir/pipeline-state.json"
+            if [ -f "$state_file" ]; then
+                local stage=$(${PYTHON} -c "import json; print(json.load(open('$state_file'))['current_stage'])" 2>/dev/null || echo "unknown")
+                echo -e "  ${GREEN}●${NC} $id — stage: ${BLUE}$stage${NC}"
+            else
+                echo -e "  ${YELLOW}○${NC} $id — no state"
+            fi
+        done
+    fi
+
+    echo ""
+    local completed_dir="$BASE_DIR/questionnaires/completed"
+    if [ -d "$completed_dir" ] && [ -n "$(ls -A "$completed_dir" 2>/dev/null)" ]; then
+        local count=$(ls -d "$completed_dir"/*/ 2>/dev/null | wc -l | tr -d ' ')
+        echo -e "  ${BOLD}Completed:${NC} $count questionnaire(s)"
+    fi
+    echo ""
+}
+
+cmd_fill_gaps() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond fill-gaps <questionnaire-id>${NC}"
+        exit 1
+    fi
+    banner
+    echo -e "\n${BLUE}Resuming pipeline after gap fill: $1${NC}\n"
+    cd "$BASE_DIR"
+    $PYTHON -c "
+import sys
+sys.path.insert(0, '.')
+from pipeline.orchestrator import resume_pipeline
+resume_pipeline('$1')
+"
+}
+
+cmd_add_source() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond add-source <file>${NC}"
+        exit 1
+    fi
+    cd "$BASE_DIR"
+    $PYTHON tools/ingest-source.py "$1"
+}
+
+cmd_add_voice_sample() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond add-voice-sample <file>${NC}"
+        exit 1
+    fi
+    local file="$1"
+    local dest="$BASE_DIR/knowledge-base/voice-samples/$(basename "$file")"
+    cp "$file" "$dest"
+    echo -e "${GREEN}✓ Voice sample added: $(basename "$file")${NC}"
+    echo -e "  Run ${BOLD}campaign-respond config${NC} to update voice profile."
+}
+
+cmd_feedback() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond feedback <questionnaire-id>${NC}"
+        echo "  Opens the final responses for editing, then logs corrections."
+        exit 1
+    fi
+    local q_id="$1"
+    local completed="$BASE_DIR/questionnaires/completed/$q_id/final-responses.md"
+    local active="$BASE_DIR/questionnaires/active/$q_id/final-responses.md"
+
+    local target=""
+    [ -f "$completed" ] && target="$completed"
+    [ -f "$active" ] && target="$active"
+
+    if [ -z "$target" ]; then
+        echo -e "${RED}Questionnaire not found: $q_id${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}Opening final responses for review...${NC}"
+    echo -e "Edit the file, save, then the system will log your corrections."
+    echo -e "File: $target"
+
+    # Open in default editor
+    ${EDITOR:-nano} "$target"
+
+    echo -e "${GREEN}✓ Corrections saved. Run feedback synthesis if needed.${NC}"
+}
+
+cmd_config() {
+    check_config
+    banner
+    echo ""
+    echo -e "  ${BOLD}Configuration Files:${NC}"
+    echo -e "  Campaign:   $BASE_DIR/config/campaign.json"
+    echo -e "  Storage:    $BASE_DIR/config/storage.json"
+    echo -e "  Voice:      $BASE_DIR/config/voice-profile.json"
+    echo -e "  Priorities: $BASE_DIR/config/priorities.json"
+    echo ""
+    echo -e "  Edit any file directly, or re-run ${BOLD}install.sh${NC} for the setup wizard."
+}
+
+cmd_list() {
+    check_config
+    banner
+    echo ""
+    echo -e "  ${BOLD}All Questionnaires:${NC}"
+    echo ""
+
+    for status_dir in active completed archived; do
+        local dir="$BASE_DIR/questionnaires/$status_dir"
+        [ -d "$dir" ] || continue
+        for qdir in "$dir"/*/; do
+            [ -d "$qdir" ] || continue
+            local id=$(basename "$qdir")
+            local label="${status_dir^^}"
+            case $status_dir in
+                active) echo -e "  ${YELLOW}[$label]${NC} $id" ;;
+                completed) echo -e "  ${GREEN}[$label]${NC} $id" ;;
+                archived) echo -e "  ${BLUE}[$label]${NC} $id" ;;
+            esac
+        done
+    done
+    echo ""
+}
+
+cmd_view() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond view <questionnaire-id>${NC}"
+        exit 1
+    fi
+    local q_id="$1"
+
+    # Check completed first, then active
+    for dir in completed active; do
+        local final="$BASE_DIR/questionnaires/$dir/$q_id/final-responses.md"
+        local revised="$BASE_DIR/questionnaires/$dir/$q_id/revised-draft.md"
+        local humanized="$BASE_DIR/questionnaires/$dir/$q_id/humanized-draft.md"
+        local comms="$BASE_DIR/questionnaires/$dir/$q_id/communications-draft.md"
+
+        for f in "$final" "$revised" "$humanized" "$comms"; do
+            if [ -f "$f" ]; then
+                echo -e "${BOLD}$(basename "$f")${NC} (from questionnaires/$dir/$q_id):"
+                echo ""
+                cat "$f"
+                return 0
+            fi
+        done
+    done
+
+    echo -e "${RED}Questionnaire not found: $q_id${NC}"
+    exit 1
+}
+
+cmd_deliver() {
+    check_config
+    if [ $# -lt 1 ]; then
+        echo -e "${RED}Usage: campaign-respond deliver <questionnaire-id>${NC}"
+        exit 1
+    fi
+    echo -e "${BLUE}Force-delivering $1...${NC}"
+    cd "$BASE_DIR"
+    $PYTHON -c "
+import sys, json
+sys.path.insert(0, '.')
+from storage.adapter import get_storage_adapter
+from pathlib import Path
+
+q_id = '$1'
+for d in ['active', 'completed']:
+    p = Path(f'questionnaires/{d}/{q_id}/final-responses.md')
+    if p.exists():
+        adapter = get_storage_adapter()
+        if adapter:
+            url = adapter.upload(str(p), f'{q_id}/final-responses.md')
+            print(f'Uploaded: {url}')
+        else:
+            print(f'No storage configured. File at: {p}')
+        break
+else:
+    print(f'Not found: {q_id}')
+"
+}
+
+cmd_history() {
+    check_config
+    banner
+    echo ""
+    echo -e "  ${BOLD}Processing History:${NC}"
+    echo ""
+
+    local completed="$BASE_DIR/questionnaires/completed"
+    if [ ! -d "$completed" ] || [ -z "$(ls -A "$completed" 2>/dev/null)" ]; then
+        echo "  No completed questionnaires yet."
+    else
+        for dir in "$completed"/*/; do
+            [ -d "$dir" ] || continue
+            local id=$(basename "$dir")
+            local state="$dir/pipeline-state.json"
+            if [ -f "$state" ]; then
+                local started=$($PYTHON -c "import json; print(json.load(open('$state')).get('started_at','?')[:19])" 2>/dev/null)
+                local completed_at=$($PYTHON -c "import json; print(json.load(open('$state')).get('completed_at','?')[:19])" 2>/dev/null)
+                echo -e "  ${GREEN}✓${NC} $id"
+                echo -e "    Started: $started | Completed: $completed_at"
+            fi
+        done
+    fi
+    echo ""
+}
+
+cmd_demo() {
+    banner
+    echo ""
+    echo -e "${BLUE}Running demo with sample data...${NC}"
+    echo ""
+
+    local demo_dir="$BASE_DIR/demo"
+
+    # Use demo config
+    if [ ! -f "$BASE_DIR/config/campaign.json" ]; then
+        echo "Setting up demo configuration..."
+        cp "$demo_dir/sample-candidate/profile.json" "$BASE_DIR/config/campaign.json"
+        cp "$BASE_DIR/config/storage.json.template" "$BASE_DIR/config/storage.json"
+        cp "$BASE_DIR/config/voice-profile.json.template" "$BASE_DIR/config/voice-profile.json"
+        cp "$BASE_DIR/config/priorities.json.template" "$BASE_DIR/config/priorities.json"
+    fi
+
+    # Copy demo positions and voice samples
+    for f in "$demo_dir"/sample-candidate/positions/*.md; do
+        [ -f "$f" ] && cp "$f" "$BASE_DIR/knowledge-base/positions/"
+    done
+    for f in "$demo_dir"/sample-candidate/voice-samples/*.md; do
+        [ -f "$f" ] && cp "$f" "$BASE_DIR/knowledge-base/voice-samples/"
+    done
+
+    echo -e "${GREEN}✓ Demo data loaded${NC}"
+    echo ""
+
+    # Run pipeline on sample questionnaire
+    cmd_new "$demo_dir/sample-questionnaire.md"
+}
+
+cmd_help() {
+    banner
+    echo ""
+    echo -e "  ${BOLD}Commands:${NC}"
+    echo ""
+    echo -e "  ${GREEN}campaign-respond new <file>${NC}           Submit a new questionnaire (PDF/DOCX/TXT/MD)"
+    echo -e "  ${GREEN}campaign-respond status${NC}                Check pipeline progress"
+    echo -e "  ${GREEN}campaign-respond fill-gaps <id>${NC}        Resume after filling position gaps"
+    echo -e "  ${GREEN}campaign-respond add-source <file>${NC}     Ingest candidate material"
+    echo -e "  ${GREEN}campaign-respond add-voice-sample <file>${NC} Add writing/speech sample"
+    echo -e "  ${GREEN}campaign-respond feedback <id>${NC}         Correct delivered responses"
+    echo -e "  ${GREEN}campaign-respond config${NC}                View/update settings"
+    echo -e "  ${GREEN}campaign-respond list${NC}                  All questionnaires with status"
+    echo -e "  ${GREEN}campaign-respond view <id>${NC}             View latest draft"
+    echo -e "  ${GREEN}campaign-respond deliver <id>${NC}          Force-deliver to storage"
+    echo -e "  ${GREEN}campaign-respond history${NC}               Processing history"
+    echo -e "  ${GREEN}campaign-respond demo${NC}                  Run demo with sample data"
+    echo -e "  ${GREEN}campaign-respond help${NC}                  This help message"
+    echo ""
+    echo -e "  ${BOLD}Quick Start:${NC}"
+    echo -e "  1. Run ${BOLD}bash install.sh${NC} to configure"
+    echo -e "  2. Add candidate materials: ${BOLD}campaign-respond add-source speech.pdf${NC}"
+    echo -e "  3. Submit a questionnaire: ${BOLD}campaign-respond new questionnaire.pdf${NC}"
+    echo -e "  4. Check progress: ${BOLD}campaign-respond status${NC}"
+    echo ""
+    echo -e "  Built by Visionary Productions — visionaryproductions.us"
+    echo ""
+}
+
+# ── Main dispatch ──
+case "${1:-help}" in
+    new)        shift; cmd_new "$@" ;;
+    status)     cmd_status ;;
+    fill-gaps)  shift; cmd_fill_gaps "$@" ;;
+    add-source) shift; cmd_add_source "$@" ;;
+    add-voice-sample) shift; cmd_add_voice_sample "$@" ;;
+    feedback)   shift; cmd_feedback "$@" ;;
+    config)     cmd_config ;;
+    list)       cmd_list ;;
+    view)       shift; cmd_view "$@" ;;
+    deliver)    shift; cmd_deliver "$@" ;;
+    history)    cmd_history ;;
+    demo)       cmd_demo ;;
+    help|--help|-h) cmd_help ;;
+    *)
+        echo -e "${RED}Unknown command: $1${NC}"
+        echo "Run 'campaign-respond help' for available commands."
+        exit 1
+        ;;
+esac

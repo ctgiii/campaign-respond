@@ -1,0 +1,16 @@
+{
+  "tone": "confident",
+  "formality": "professional",
+  "sentence_length": "mixed",
+  "vocabulary_level": "accessible",
+  "storytelling_frequency": "moderate",
+  "local_references": true,
+  "personal_anecdotes": true,
+  "rhetorical_devices": ["parallel_structure", "call_to_action"],
+  "avoid": ["jargon", "hedging", "passive_voice"],
+  "signature_phrases": [],
+  "opening_style": "direct",
+  "closing_style": "forward_looking",
+  "humor": "occasional",
+  "sample_texts": []
+}

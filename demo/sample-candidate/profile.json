@@ -1,0 +1,31 @@
+{
+  "candidate": {
+    "name": "Jordan Rivera",
+    "office": "Frederick County Council, District 3",
+    "party": "Independent",
+    "website": "jordanrivera2026.com",
+    "bio": "Small business owner, 15-year Frederick resident, former PTA president, community organizer",
+    "district": "District 3",
+    "state": "Maryland",
+    "election_year": "2026"
+  },
+  "requester": {
+    "name": "Demo User",
+    "role": "Campaign Manager",
+    "email": "demo@example.com",
+    "phone": "",
+    "organization": "Rivera for Frederick"
+  },
+  "notifications": {
+    "sms_enabled": false,
+    "email_enabled": false,
+    "imessage_enabled": false
+  },
+  "pipeline": {
+    "model": "claude-sonnet-4-6",
+    "mode": "cli",
+    "auto_deliver": false,
+    "require_human_gap_review": false,
+    "max_revision_rounds": 2
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "candidate": {
+    "name": "",
+    "office": "",
+    "party": "",
+    "website": "",
+    "bio": "",
+    "district": "",
+    "state": "",
+    "election_year": ""
+  },
+  "requester": {
+    "name": "",
+    "role": "",
+    "email": "",
+    "phone": "",
+    "organization": ""
+  },
+  "notifications": {
+    "sms_enabled": false,
+    "email_enabled": true,
+    "imessage_enabled": false
+  },
+  "pipeline": {
+    "model": "claude-sonnet-4-6",
+    "mode": "cli",
+    "auto_deliver": false,
+    "require_human_gap_review": true,
+    "max_revision_rounds": 2
+  }
+}

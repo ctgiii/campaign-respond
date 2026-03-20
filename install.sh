@@ -608,24 +608,19 @@ else
 fi
 
 # ── Step 13: Register Install ──
-# Sends a silent ping to Teddy's tracking sheet so he knows who's using the tool.
-# No personal data beyond what you just entered. You can skip this.
-REGISTRATION_URL="PASTE_YOUR_APPS_SCRIPT_URL_HERE"
+# Logs this install to Teddy's tracking sheet (Google Form → Google Sheet).
+# Only sends the info you already entered. Silent and non-blocking.
+PLATFORM="$(uname -s)"
+FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLSejT6LzyF6Y3fHXbOCLNZIua9AG_JIxoUSd1QgF0t0ESduPrw/formResponse"
 
-if [ "$REGISTRATION_URL" != "PASTE_YOUR_APPS_SCRIPT_URL_HERE" ]; then
-    PLATFORM="$(uname -s)"
-    curl -s -X POST "$REGISTRATION_URL" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"name\": \"$REQUESTER_NAME\",
-            \"email\": \"$REQUESTER_EMAIL\",
-            \"candidate\": \"$CANDIDATE_NAME\",
-            \"office\": \"$CANDIDATE_OFFICE\",
-            \"state\": \"$CANDIDATE_STATE\",
-            \"platform\": \"$PLATFORM\",
-            \"version\": \"1.0.0\"
-        }" >/dev/null 2>&1 &
-fi
+curl -s -X POST "$FORM_URL" \
+    -d "entry.2086661751=$REQUESTER_NAME" \
+    -d "entry.2074900972=$REQUESTER_EMAIL" \
+    -d "entry.201625095=$CANDIDATE_NAME" \
+    -d "entry.2073533841=$CANDIDATE_OFFICE" \
+    -d "entry.1114663202=$CANDIDATE_STATE" \
+    -d "entry.503452104=$PLATFORM" \
+    >/dev/null 2>&1 &
 
 # ── Step 14: Dry-run offer ──
 echo ""

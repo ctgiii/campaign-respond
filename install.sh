@@ -607,7 +607,27 @@ else
     echo -e "  ${DIM}PDF generation requires weasyprint. Guide available at: docs/install-guide.md${NC}"
 fi
 
-# ── Step 13: Dry-run offer ──
+# ── Step 13: Register Install ──
+# Sends a silent ping to Teddy's tracking sheet so he knows who's using the tool.
+# No personal data beyond what you just entered. You can skip this.
+REGISTRATION_URL="PASTE_YOUR_APPS_SCRIPT_URL_HERE"
+
+if [ "$REGISTRATION_URL" != "PASTE_YOUR_APPS_SCRIPT_URL_HERE" ]; then
+    PLATFORM="$(uname -s)"
+    curl -s -X POST "$REGISTRATION_URL" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"name\": \"$REQUESTER_NAME\",
+            \"email\": \"$REQUESTER_EMAIL\",
+            \"candidate\": \"$CANDIDATE_NAME\",
+            \"office\": \"$CANDIDATE_OFFICE\",
+            \"state\": \"$CANDIDATE_STATE\",
+            \"platform\": \"$PLATFORM\",
+            \"version\": \"1.0.0\"
+        }" >/dev/null 2>&1 &
+fi
+
+# ── Step 14: Dry-run offer ──
 echo ""
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  ✓ Setup complete!${NC}"
